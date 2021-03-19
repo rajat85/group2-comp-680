@@ -1,16 +1,36 @@
 const sls = require('serverless-http');
+const morgan = require('morgan');
 const express = require('express');
 const app = express();
+const winston = require('./config/winston');
 const { postSlackMessage } = require('./slack_bot');
+const { getInfo } = require('./info');
+
+app.use(morgan('combined', { stream: winston.stream }));
+
+// error handler
+app.use(function(err, req, res, next) {
+  // set locals, only providing error in development
+  res.locals.message = err.message;
+  // res.locals.error = req.app.get('env') === 'development' ? err : {};
+  res.locals.error = err;
+
+  // add this line to include winston logging
+  winston.error(`${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
+
+  // render the error page
+  res.status(err.status || 500);
+  res.render('error');
+});
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.get('/api/info', (req, res) => {
-  res.send({ application: 'group2-comp-680', version: '1' });
+app.get('/api/info', async (req, res) => {
+  res.send(await getInfo());
 });
-app.post('/api/v1/slack', async (req, res) => {
-  await postSlackMessage();
-  res.send({ ...req.body });
+app.use('/api/v1/slack', async (req, res) => {
+  const status = await postSlackMessage();
+  res.send();
 });
 //app.listen(3000, () => console.log(`Listening on: 3000`));
 module.exports.handler = sls(app, { callbackWaitsForEmptyEventLoop: false });

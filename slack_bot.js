@@ -1,12 +1,13 @@
 const { IncomingWebhook } = require('@slack/webhook');
 const HttpsProxyAgent = require('https-proxy-agent');
 const url = `${process.env.SLACK_WEBHOOK_URL}`;
+const winston = require('./config/winston');
 
 let proxy;
 if (process.env.http_proxy) {
   proxy = new HttpsProxyAgent(process.env.http_proxy);
 }
-const webhook = proxy ? new IncomingWebhook(url,{ agent: proxy }) : new IncomingWebhook(url);
+const webhook = proxy ? new IncomingWebhook(url, { agent: proxy }) : new IncomingWebhook(url);
 const HEADERS = { 'content-type': 'application/json' };
 
 
@@ -30,6 +31,7 @@ function payload(channel = '') {
 }
 
 async function postSlackMessage() {
+  winston.info(payload());
   return await webhook.send(payload());
 }
 

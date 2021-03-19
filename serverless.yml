@@ -28,12 +28,12 @@ provider:
   name: aws
   runtime: nodejs12.x
   lambdaHashingVersion: 20201221
-#  iamRoleStatements:
-#    - Effect: Allow
-#      Action:
-#        - dynamodb:PutItem
-#        - dynamodb:GetItem
-#      Resource: "arn:aws:dynamodb:us-east-1:094088609480:table/students"
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:GetItem
+      Resource: "arn:aws:dynamodb:us-east-1:094088609480:table/students"
 
 # you can overwrite defaults here
 #  stage: prod
@@ -77,13 +77,16 @@ functions:
           method: get
   slack:
     handler: app.handler
-#    The following are a few example events you can configure
-#    NOTE: Please make sure to change your handler code to work with those events
-#    Check the event documentation for details
     events:
       - httpApi:
           path: /api/v1/slack
           method: post
+      - httpApi:
+          path: /api/v1/slack
+          method: get
+      - cloudwatchLog:
+          logGroup: '/aws/lambda/group2-comp-680-prod-info'
+          filter: '{$.level = "warn"}'
 #      - websocket: $connect
 #      - s3: ${env:BUCKET}
 #      - schedule: rate(10 minutes)
@@ -141,3 +144,17 @@ functions:
 #     NewOutput:
 #       Description: "Description for the output"
 #       Value: "Some output value"
+
+# custom:
+#   alerts:
+#     stages:
+#       - prod
+#     topics:
+#       alarm:
+#         topic: ${self:service}-${opt:stage}-alerts-alarm
+#         notifications:
+#           - protocol: email
+#             endpoint: rajat.ghosh.119@my.csun.edu
+#     alarms:
+#       - functionErrors
+#       - functionThrottles
