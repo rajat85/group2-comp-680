@@ -81,12 +81,12 @@ functions:
       - httpApi:
           path: /api/v1/slack
           method: post
-      - httpApi:
-          path: /api/v1/slack
-          method: get
+  myCloudWatchLog:
+    handler: slack_bot.postSlackMessage
+    events:
       - cloudwatchLog:
           logGroup: '/aws/lambda/group2-comp-680-prod-info'
-          filter: '{$.level = "warn"}'
+          filter: '{$.level = "warn" || $.level = "error"}'
 #      - websocket: $connect
 #      - s3: ${env:BUCKET}
 #      - schedule: rate(10 minutes)

@@ -28,9 +28,5 @@ app.use(express.json());
 app.get('/api/info', async (req, res) => {
   res.send(await getInfo());
 });
-app.use('/api/v1/slack', async (req, res) => {
-  const status = await postSlackMessage();
-  res.send();
-});
 //app.listen(3000, () => console.log(`Listening on: 3000`));
 module.exports.handler = sls(app, { callbackWaitsForEmptyEventLoop: false });
