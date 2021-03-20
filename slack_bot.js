@@ -30,7 +30,7 @@ function payload(channel = '') {
   };
 }
 
-async function postSlackMessage() {
+async function postSlackMessage(event, context, callback) {
   winston.info(payload());
   return await webhook.send(payload());
 }
