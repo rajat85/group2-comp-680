@@ -28,6 +28,8 @@ provider:
   name: aws
   runtime: nodejs12.x
   lambdaHashingVersion: 20201221
+  apiGateway:
+    shouldStartNameWithService: true
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -72,21 +74,36 @@ functions:
   info:
     handler: app.handler
     events:
-      - httpApi:
+      - http:
           path: /api/info
           method: get
+          authorizer:
+            name: basicAuth
+            resultTtlInSeconds: 0
+            identitySource: method.request.header.Authorization
+            type: request
+
   slack:
     handler: app.handler
     events:
-      - httpApi:
+      - http:
           path: /api/v1/slack
           method: post
+          authorizer:
+            name: basicAuth
+            resultTtlInSeconds: 0
+            identitySource: method.request.header.Authorization
+            type: request
+
   myCloudWatchLog:
     handler: slack_bot.postSlackMessage
     events:
       - cloudwatchLog:
           logGroup: '/aws/lambda/group2-comp-680-prod-info'
           filter: '{$.level = "warn" || $.level = "error"}'
+
+  basicAuth:
+    handler: auth.handler
 #      - websocket: $connect
 #      - s3: ${env:BUCKET}
 #      - schedule: rate(10 minutes)
@@ -120,6 +137,18 @@ functions:
 #    environment:
 #      variable2: value2
 
+resources:
+  Resources:
+    GatewayResponse:
+      Type: 'AWS::ApiGateway::GatewayResponse'
+      Properties:
+        ResponseParameters:
+          gatewayresponse.header.WWW-Authenticate: "'Basic'"
+        ResponseType: UNAUTHORIZED
+        RestApiId:
+          Ref: 'ApiGatewayRestApi'
+        StatusCode: '401'
+
 # you can add CloudFormation resource templates here
 #resources:
 #  Resources:
@@ -145,7 +174,9 @@ functions:
 #       Description: "Description for the output"
 #       Value: "Some output value"
 
-# custom:
+custom:
+  serverless-offline:
+    ignoreJWTSignature: true
 #   alerts:
 #     stages:
 #       - prod
