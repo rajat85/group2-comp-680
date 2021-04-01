@@ -1,6 +1,6 @@
 exports.handler = (event, context, callback) => {
   const authorizationHeader = event.headers.Authorization;
-  console.dir(authorizationHeader);
+
   if (!authorizationHeader) {
     return callback("Unauthorized");
   }
