@@ -35,7 +35,7 @@ provider:
       Action:
         - dynamodb:PutItem
         - dynamodb:GetItem
-      Resource: "arn:aws:dynamodb:us-east-1:094088609480:table/students"
+      Resource: "arn:aws:dynamodb:us-east-1:094088609480:table/*"
 
 # you can overwrite defaults here
 #  stage: prod
@@ -149,25 +149,19 @@ resources:
           Ref: 'ApiGatewayRestApi'
         StatusCode: '401'
 
-# you can add CloudFormation resource templates here
-#resources:
-#  Resources:
-#    NewResource:
-#      Type: AWS::DynamoDB::Table
-#      Properties:
-#        TableName: students
-#        AttributeDefinitions:
-#          -
-#            AttributeName: id
-#            AttributeType: S
-#        KeySchema:
-#          -
-#            AttributeName: id
-#            KeyType: HASH
-#        ProvisionedThroughput:
-#          ReadCapacityUnits: 1
-#          WriteCapacityUnits: 1
-
+    NewResource:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: cloud_watch_logs
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
 
 #  Outputs:
 #     NewOutput:

@@ -10,6 +10,12 @@ if (process.env.http_proxy) {
 const webhook = proxy ? new IncomingWebhook(url, { agent: proxy }) : new IncomingWebhook(url);
 const HEADERS = { 'content-type': 'application/json' };
 
+const AWS = require("aws-sdk");
+const { v4: uuidv4 } = require('uuid');
+const moment = require("moment");
+const client = new AWS.DynamoDB.DocumentClient();
+const zlib = require('zlib');
+
 
 function payload(channel = '') {
   return {
@@ -31,7 +37,48 @@ function payload(channel = '') {
 }
 
 async function postSlackMessage(event, context, callback) {
-  winston.info(payload());
+  winston.info("CloudWatch Begin");
+  winston.info({ event, context, callback });
+  let data;
+  let awsRequestId;
+  let functionName;
+  let functionVersion;
+  let logGroupName;
+  let logStreamName;
+
+  if (context) {
+    awsRequestId = context.awsRequestId;
+    functionName = context.functionName;
+    functionVersion = context.functionVersion;
+    logGroupName = context.logGroupName;
+    logStreamName = context.logStreamName;
+  }
+
+  if (event.awslogs && event.awslogs.data) {
+    data = event.awslogs.data;
+    const payload = Buffer.from(data, 'base64');
+    const logEvents = JSON.parse(zlib.unzipSync(payload).toString()).logEvents;
+
+    for (const logEvent of logEvents) {
+      const log = JSON.parse(logEvent.message);
+      await client.put({
+        TableName: 'cloud_watch_logs',
+        Item: {
+          id: uuidv4(),
+          data,
+          awsRequestId,
+          functionName,
+          functionVersion,
+          logGroupName,
+          logStreamName,
+          createdAt: moment(),
+          logLevel: log.level,
+        }
+      }).promise();
+    }
+  }
+  winston.info({ event, context, callback });
+  winston.info("CloudWatch End");
   return await webhook.send(payload());
 }
 
