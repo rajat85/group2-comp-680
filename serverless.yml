@@ -83,6 +83,13 @@ functions:
             identitySource: method.request.header.Authorization
             type: request
 
+  setLogLevel:
+    handler: app.handler
+    events:
+      - http:
+          path: /api/v1/log_level
+          method: post
+
   slack:
     handler: app.handler
     events:
@@ -149,10 +156,23 @@ resources:
           Ref: 'ApiGatewayRestApi'
         StatusCode: '401'
 
-    NewResource:
-      Type: AWS::DynamoDB::Table
+    cloudWatchLogs:
+      Type: 'AWS::DynamoDB::Table'
       Properties:
         TableName: cloud_watch_logs
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+    currenLogLevel:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        TableName: current_log_level
         AttributeDefinitions:
           - AttributeName: id
             AttributeType: S
