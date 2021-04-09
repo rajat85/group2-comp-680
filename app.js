@@ -5,6 +5,7 @@ const app = express();
 const winston = require('./config/winston');
 const { postSlackMessage } = require('./slack_bot');
 const { getInfo } = require('./info');
+const { setLogLevel } = require('./log_level');
 
 app.use(morgan('combined', { stream: winston.stream }));
 
@@ -27,6 +28,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.get('/api/info', async (req, res) => {
   res.send(await getInfo());
+});
+
+app.post('/api/v1/log_level', async (req, res) => {
+  res.send(await setLogLevel());
 });
 //app.listen(3000, () => console.log(`Listening on: 3000`));
 module.exports.handler = sls(app, { callbackWaitsForEmptyEventLoop: false });
