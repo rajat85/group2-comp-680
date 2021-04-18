@@ -13,8 +13,9 @@
 
 service: group2-comp-680
 plugins:
-  - serverless-offline
   - serverless-dotenv-plugin
+  - serverless-dynamodb-local
+  - serverless-offline
 useDotenv: true
 # app and org for use with dashboard.serverless.com
 app: group2-comp-680-app
@@ -30,16 +31,18 @@ provider:
   lambdaHashingVersion: 20201221
   apiGateway:
     shouldStartNameWithService: true
+  tracing:
+    apiGateway: true
+    lambda: true
   iamRoleStatements:
     - Effect: Allow
       Action:
         - dynamodb:PutItem
         - dynamodb:GetItem
-      Resource: "arn:aws:dynamodb:us-east-1:094088609480:table/*"
-
+      Resource: "arn:aws:dynamodb:us-west-2:094088609480:table/*"
 # you can overwrite defaults here
-#  stage: prod
-#  region: us-east-1
+  stage: prod
+  region: us-west-2
 
 # you can add statements to the Lambda function's IAM Role here
 #  iamRoleStatements:
@@ -58,8 +61,10 @@ provider:
 #            - "/*"
 
 # you can define service wide environment variables here
-#  environment:
-#    variable1: value1
+  environment:
+    CONFIG_CLOUD_WATCH_LOGS_TABLE: ${self:custom.tableNames.cloudWatchLogs}
+    CONFIG_CURRENT_LOG_LEVEL_TABLE: ${self:custom.tableNames.currentLogLevel}
+    CONFIG_DYNAMODB_ENDPOINT: ${self:custom.endpoints.dynamodb-url}
 
 # you can add packaging information here
 #package:
@@ -191,6 +196,22 @@ resources:
 custom:
   serverless-offline:
     ignoreJWTSignature: true
+
+  tableNames:
+    cloudWatchLogs: 'cloud_watch_logs'
+    currentLogLevel: 'current_log_level'
+
+  dynamodb:
+    start:
+      migrate: true
+    migration:
+      dir: dynamodbMigrations
+    stages:
+      - dev
+      - prod
+
+  endpoints:
+    dynamodb-url: 'http://localhost:8000'
 #   alerts:
 #     stages:
 #       - prod

@@ -2,26 +2,40 @@ const winston = require('./config/winston');
 const AWS = require("aws-sdk");
 const { v4: uuidv4 } = require('uuid');
 const moment = require("moment");
-const client = new AWS.DynamoDB.DocumentClient();
+const CONFIG_CURRENT_LOG_LEVEL_TABLE = process.env.CONFIG_CURRENT_LOG_LEVEL_TABLE;
+const CONFIG_DYNAMODB_ENDPOINT = process.env.CONFIG_DYNAMODB_ENDPOINT;
+const IS_OFFLINE = process.env.IS_OFFLINE;
+
+let client;
+if (IS_OFFLINE === 'true') {
+  client = new AWS.DynamoDB.DocumentClient({
+    region: 'localhost',
+    endpoint: CONFIG_DYNAMODB_ENDPOINT,
+  });
+} else {
+  client = new AWS.DynamoDB.DocumentClient();
+}
 
 async function setLogLevel(event, context, callback) {
   winston.info("setLogLevel Begin");
-  winston.info({ event, context, callback });
-  let data;
-  let awsRequestId;
-  let functionName;
-  let functionVersion;
-  let logGroupName;
-  let logStreamName;
-
-  await client.put({
-    TableName: 'current_log_level',
-    Item: {
-      id: uuidv4(),
-      data: "error",
-      createdAt: moment(),
-    }
-  }).promise();
+  console.dir(event);
+  console.dir(context);
+  console.dir(callback);
+  console.log({ event, context, callback });
+  // try {
+    await client.put({
+      TableName: CONFIG_CURRENT_LOG_LEVEL_TABLE,
+      Item: {
+        id: uuidv4(),
+        data: "error",
+        createdAt: moment().format(),
+      }
+    }).promise();
+  // {  } catch (err)
+  //   console.log("Gotchas...");
+  //   console.log(CONFIG_CURRENT_LOG_LEVEL_TABLE);
+  //   console.dir(err);
+  // }
 
   winston.info("setLogLevel End");
 }

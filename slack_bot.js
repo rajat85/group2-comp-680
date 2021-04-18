@@ -53,6 +53,14 @@ async function postSlackMessage(event, context, callback) {
     logGroupName = context.logGroupName;
     logStreamName = context.logStreamName;
   }
+  console.log("....Begin console.log....");
+  console.log(awsRequestId);
+  console.log(functionName);
+  console.log(functionVersion);
+  console.log(logGroupName);
+  console.log(logStreamName);
+  console.log(uuidv4());
+  console.log("....End of console.log....");
 
   if (event.awslogs && event.awslogs.data) {
     data = event.awslogs.data;
@@ -61,6 +69,7 @@ async function postSlackMessage(event, context, callback) {
 
     for (const logEvent of logEvents) {
       const log = JSON.parse(logEvent.message);
+
       await client.put({
         TableName: 'cloud_watch_logs',
         Item: {
@@ -71,7 +80,7 @@ async function postSlackMessage(event, context, callback) {
           functionVersion,
           logGroupName,
           logStreamName,
-          createdAt: moment(),
+          createdAt: moment().format(),
           logLevel: log.level,
         }
       }).promise();
