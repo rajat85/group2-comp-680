@@ -17,25 +17,22 @@ if (IS_OFFLINE === 'true') {
 }
 
 async function setLogLevel(event, context, callback) {
+  const requestBody = event && event.body || {};
   winston.info("setLogLevel Begin");
-  console.dir(event);
-  console.dir(context);
-  console.dir(callback);
-  console.log({ event, context, callback });
-  // try {
+  console.log({event, context, callback});
+  try {
     await client.put({
       TableName: CONFIG_CURRENT_LOG_LEVEL_TABLE,
       Item: {
         id: uuidv4(),
-        data: "error",
+        data: requestBody.level || "error",
         createdAt: moment().format(),
       }
     }).promise();
-  // {  } catch (err)
-  //   console.log("Gotchas...");
-  //   console.log(CONFIG_CURRENT_LOG_LEVEL_TABLE);
-  //   console.dir(err);
-  // }
+  } catch (err) {
+    console.log("Error occurred.")
+    console.log(err);
+  }
 
   winston.info("setLogLevel End");
 }

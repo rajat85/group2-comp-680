@@ -31,7 +31,7 @@ app.get('/api/info', async (req, res) => {
 });
 
 app.post('/api/v1/log_level', async (req, res) => {
-  res.send(await setLogLevel());
+  res.send(await setLogLevel(req, res));
 });
 //app.listen(3000, () => console.log(`Listening on: 3000`));
 module.exports.handler = sls(app, { callbackWaitsForEmptyEventLoop: false });
