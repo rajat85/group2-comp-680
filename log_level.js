@@ -1,6 +1,5 @@
 const winston = require('./config/winston');
 const AWS = require("aws-sdk");
-const { v4: uuidv4 } = require('uuid');
 const moment = require("moment");
 const CONFIG_CURRENT_LOG_LEVEL_TABLE = process.env.CONFIG_CURRENT_LOG_LEVEL_TABLE;
 const CONFIG_DYNAMODB_ENDPOINT = process.env.CONFIG_DYNAMODB_ENDPOINT;
@@ -24,7 +23,7 @@ async function setLogLevel(event, context, callback) {
     await client.put({
       TableName: CONFIG_CURRENT_LOG_LEVEL_TABLE,
       Item: {
-        id: uuidv4(),
+        id: '000000',
         data: requestBody.level || "error",
         createdAt: moment().format(),
       }
