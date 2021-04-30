@@ -39,6 +39,10 @@ provider:
       Action:
         - dynamodb:PutItem
         - dynamodb:GetItem
+        - dynamodb:BatchGetItem,
+        - dynamodb:Scan,
+        - dynamodb:Query,
+        - dynamodb:ConditionCheckItem
       Resource: "arn:aws:dynamodb:us-west-2:094088609480:table/*"
 # you can overwrite defaults here
   stage: prod
@@ -93,6 +97,12 @@ functions:
     events:
       - http:
           path: /api/v1/log_level
+          method: post
+  recall:
+    handler: app.handler
+    events:
+      - http:
+          path: /api/v1/recall
           method: post
 
   slack:
