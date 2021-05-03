@@ -28,7 +28,7 @@ app.use(function(err, req, res, next) {
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.get('/api/info', async (req, res) => {
-  res.send(await getInfo());
+  res.send(await getInfo(req, res));
 });
 
 app.post('/api/v1/log_level', async (req, res) => {

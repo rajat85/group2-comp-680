@@ -21,7 +21,7 @@ async function recall(event, context, callback) {
   const { text = "" } = requestBody;
   const params = text.split(/[\s,]+/);
   let message;
-  const validFomats = ["warning", "error", "err", "info"]
+  const validFomats = ["warn", "error"];
   if (!validFomats.includes(params[0])) {
     message = `Problem! recall can only be done for one of (${validFomats.join(', ')}).`
     return {
@@ -29,12 +29,13 @@ async function recall(event, context, callback) {
     };
   }
 
-  if (!isFinite(parseInt(params[1]) || !parseInt(params[1]) <= 10)) {
+  if (!isFinite(parseInt(params[1])) || parseInt(params[1]) > 10) {
     message = `Problem! recall can be done for last 10 events.`
     return {
       "text": `:error ${message} \n`
     };
   }
+
   let data = {
     Items: []
   };
@@ -67,7 +68,7 @@ async function recall(event, context, callback) {
         "type": "section",
         "text": {
           "type": "mrkdwn",
-          "text": `<${logStreamUrl(log.logGroupName, log.logStreamName, log.createdAt)}|Log details  :clock5:> \n :star: ${log.logStreamName} \n `
+          "text": `<${logStreamUrl(log.logGroupName, log.logStreamName, log.createdAt)}|Log details  :clock5:> \n :star: ${log.logStreamName} CreatedAt: ${log.createdAt} \n `
         }
       });
     })

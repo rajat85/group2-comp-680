@@ -2,6 +2,8 @@ const { IncomingWebhook } = require('@slack/webhook');
 const HttpsProxyAgent = require('https-proxy-agent');
 const url = `${process.env.SLACK_WEBHOOK_URL}`;
 const winston = require('./config/winston');
+const CONFIG_CURRENT_LOG_LEVEL_TABLE = process.env.CONFIG_CURRENT_LOG_LEVEL_TABLE;
+const AWS_REGION = process.env.REGION;
 
 let proxy;
 if (process.env.http_proxy) {
@@ -17,7 +19,7 @@ const client = new AWS.DynamoDB.DocumentClient();
 const zlib = require('zlib');
 
 
-function payload(channel = '') {
+function slackMessagePayload(channel = '') {
   return {
     "text": ":warning: Here is the log from CloudWatch that needs your attention. \n",
     "channel": channel,
@@ -66,10 +68,20 @@ async function postSlackMessage(event, context, callback) {
     data = event.awslogs.data;
     const payload = Buffer.from(data, 'base64');
     const logEvents = JSON.parse(zlib.unzipSync(payload).toString()).logEvents;
+    const params = {
+      TableName: CONFIG_CURRENT_LOG_LEVEL_TABLE,
+      Key: {
+        "id": '000000'
+      }
+    };
+    const currentLogLevel = await client.get(params).promise();
+    console.log("....current log level record....");
+    console.log(currentLogLevel.Item);
+    console.log("....End of current log level record....");
 
     for (const logEvent of logEvents) {
       const log = JSON.parse(logEvent.message);
-
+      const createdAt = moment().format();
       await client.put({
         TableName: 'cloud_watch_logs',
         Item: {
@@ -80,15 +92,38 @@ async function postSlackMessage(event, context, callback) {
           functionVersion,
           logGroupName,
           logStreamName,
-          createdAt: moment().format(),
+          createdAt,
           logLevel: log.level,
         }
       }).promise();
+
+      if (!currentLogLevel || currentLogLevel.Item && currentLogLevel.Item.data.includes(log.level)) {
+        const logBaseUrl = `https://console.aws.amazon.com/cloudwatch/home?region=${AWS_REGION}#logsV2:log-groups/log-group`;
+        const encode = text => encodeURIComponent(text).replace(/%/g, '$');
+        const awsEncode = text => encodeURIComponent(encodeURIComponent(text)).replace(/%/g, '$');
+        const encodeTimestamp = timestamp => encode('?start=') + awsEncode(new Date(timestamp).toJSON());
+        const awsLambdaLogBaseUrl = `${logBaseUrl}/${awsEncode('/aws/lambda/group2-comp-680-prod-info')}`;
+        const logStreamUrl = (logGroup, logStream, timestamp) => `${awsLambdaLogBaseUrl}${logGroup}/log-events/${awsEncode(logStream)}${timestamp ? encodeTimestamp(timestamp) : ''}`;
+        return await webhook.send({
+          "text": ":warning: Here is the log from CloudWatch that needs your attention. \n",
+          "attachments": [
+            {
+              "actions": [
+                {
+                  "type": "button",
+                  "text": `${currentLogLevel.Item.data}: log details  :clock5:`,
+                  "url": `${logStreamUrl(logGroupName, logStreamName, createdAt)}`
+                }
+              ]
+            }
+          ]
+        });
+      }
     }
   }
+
   winston.info({ event, context, callback });
   winston.info("CloudWatch End");
-  return await webhook.send(payload());
 }
 
 module.exports.postSlackMessage = postSlackMessage;

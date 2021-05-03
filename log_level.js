@@ -22,12 +22,12 @@ async function setLogLevel(event, context, callback) {
   const { text = "" } = requestBody;
   const levels = text.split(/[\s,]+/);
   let message;
-  const validFomats = ["warning", "error", "err", "info"]
+  const validFomats = ["warn", "error"];
   for (const level of levels) {
     if (!validFomats.includes(level)) {
       message = `Problem! ${level} is not a valid filter from one of (${validFomats.join(', ')}).`
       return {
-        'body': message
+        'text': message
       };
     }
   }
@@ -49,7 +49,7 @@ async function setLogLevel(event, context, callback) {
   winston.info("setLogLevel End");
 
   return {
-    'body': message
+    'text': message
   };
 }
 
