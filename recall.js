@@ -2,6 +2,7 @@ const winston = require('./config/winston');
 const AWS = require("aws-sdk");
 const CONFIG_DYNAMODB_ENDPOINT = process.env.CONFIG_DYNAMODB_ENDPOINT;
 const IS_OFFLINE = process.env.IS_OFFLINE;
+const AWS_REGION = process.env.REGION;
 
 let client;
 if (IS_OFFLINE === 'true') {
@@ -24,14 +25,14 @@ async function recall(event, context, callback) {
   if (!validFomats.includes(params[0])) {
     message = `Problem! recall can only be done for one of (${validFomats.join(', ')}).`
     return {
-      'body': message
+      "text": message
     };
   }
 
   if (!isFinite(parseInt(params[1]) || !parseInt(params[1]) <= 10)) {
     message = `Problem! recall can be done for last 10 events.`
     return {
-      'body': message
+      "text": `:error ${message} \n`
     };
   }
   let listLogs = [];
@@ -39,12 +40,14 @@ async function recall(event, context, callback) {
     const data = await client.scan({
       TableName: 'cloud_watch_logs',
       FilterExpression : 'logLevel = :level',
-      ExpressionAttributeValues : {':level' : params[0]}
+      ExpressionAttributeValues : { ':level' : params[0] },
+      Limit: parseInt(params[1]) + 1,
+      ScanIndexForward: true
     }).promise();
-    // message = `Success! Level set: ${text}`;
-    data.Items.forEach(function(cloudWatchLog) {
-      listLogs.push(cloudWatchLog.logLevel);
-    });
+    for (const cloudWatchLog of data.Items) {
+      const url = `https://${AWS_REGION}.console.aws.amazon.com/cloudwatch/home?region=${AWS_REGION}#logsV2:log-groups/log-group/${cloudWatchLog.logGroupName}/log-events/${cloudWatchLog.logStreamName}`;
+      listLogs.push(url);
+    }
   } catch (err) {
     console.log("Error occurred.")
     console.log(err);
@@ -53,7 +56,19 @@ async function recall(event, context, callback) {
   winston.info("recall End");
 
   return {
-    'body': listLogs.join("\n")
+    "text": `Here are the last ${params[1]} CloudWatch ${params[0]} logs. \n`,
+    "attachments": listLogs.map((log) => {
+      return ({
+          "fallback": `${log} Please see the details`,
+          "actions": [
+            {
+              "type": "button",
+              "text": "Log details  :clock5:",
+              "url": `${log}`
+            }
+          ]
+      });
+    })
   };
 }
 

@@ -69,6 +69,7 @@ provider:
     CONFIG_CLOUD_WATCH_LOGS_TABLE: ${self:custom.tableNames.cloudWatchLogs}
     CONFIG_CURRENT_LOG_LEVEL_TABLE: ${self:custom.tableNames.currentLogLevel}
     CONFIG_DYNAMODB_ENDPOINT: ${self:custom.endpoints.dynamodb-url}
+    REGION: ${self:provider.region}
 
 # you can add packaging information here
 #package:
