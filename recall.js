@@ -35,19 +35,17 @@ async function recall(event, context, callback) {
       "text": `:error ${message} \n`
     };
   }
-  let listLogs = [];
+  let data = {
+    Items: []
+  };
   try {
-    const data = await client.scan({
+    data = await client.scan({
       TableName: 'cloud_watch_logs',
       FilterExpression : 'logLevel = :level',
       ExpressionAttributeValues : { ':level' : params[0] },
-      Limit: parseInt(params[1]) + 1,
+      Limit: 1000,
       ScanIndexForward: true
     }).promise();
-    for (const cloudWatchLog of data.Items) {
-      const url = `https://${AWS_REGION}.console.aws.amazon.com/cloudwatch/home?region=${AWS_REGION}#logsV2:log-groups/log-group/${cloudWatchLog.logGroupName}/log-events/${cloudWatchLog.logStreamName}`;
-      listLogs.push(url);
-    }
   } catch (err) {
     console.log("Error occurred.")
     console.log(err);
@@ -57,16 +55,20 @@ async function recall(event, context, callback) {
 
   return {
     "text": `Here are the last ${params[1]} CloudWatch ${params[0]} logs. \n`,
-    "attachments": listLogs.map((log) => {
+    "blocks": data.Items.slice(0, parseInt(params[1])).map((log) => {
+      const logBaseUrl = `https://console.aws.amazon.com/cloudwatch/home?region=${AWS_REGION}#logsV2:log-groups/log-group`;
+      const encode = text => encodeURIComponent(text).replace(/%/g, '$');
+      const awsEncode = text => encodeURIComponent(encodeURIComponent(text)).replace(/%/g, '$');
+      const encodeTimestamp = timestamp => encode('?start=') + awsEncode(new Date(timestamp).toJSON());
+      const awsLambdaLogBaseUrl = `${logBaseUrl}/${awsEncode('/aws/lambda/group2-comp-680-prod-info')}`;
+      const logStreamUrl = (logGroup, logStream, timestamp) =>
+        `${awsLambdaLogBaseUrl}${logGroup}/log-events/${awsEncode(logStream)}${timestamp ? encodeTimestamp(timestamp) : ''}`;
       return ({
-          "fallback": `${log} Please see the details`,
-          "actions": [
-            {
-              "type": "button",
-              "text": "Log details  :clock5:",
-              "url": `${log}`
-            }
-          ]
+        "type": "section",
+        "text": {
+          "type": "mrkdwn",
+          "text": `<${logStreamUrl(log.logGroupName, log.logStreamName, log.createdAt)}|Log details  :clock5:> \n :star: ${log.logStreamName} \n `
+        }
       });
     })
   };
